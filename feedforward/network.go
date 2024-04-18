@@ -25,9 +25,9 @@ func New(inputSize, hiddenSize, outputSize int, lr float64) *Network {
 		hiddenSize:          hiddenSize,
 		outputSize:          outputSize,
 		weightsInputHidden:  randomMat(inputSize, hiddenSize),
-		biasesInputHidden:   randomArr(hiddenSize),
+		biasesInputHidden:   randomVector(hiddenSize),
 		weightsHiddenOutput: randomMat(hiddenSize, outputSize),
-		biasesHiddenOutput:  randomArr(outputSize),
+		biasesHiddenOutput:  randomVector(outputSize),
 		lr:                  lr,
 	}
 }
@@ -35,12 +35,12 @@ func New(inputSize, hiddenSize, outputSize int, lr float64) *Network {
 func randomMat(rows, cols int) [][]float64 {
 	weights := make([][]float64, rows)
 	for i := range weights {
-		weights[i] = randomArr(cols)
+		weights[i] = randomVector(cols)
 	}
 	return weights
 }
 
-func randomArr(n int) []float64 {
+func randomVector(n int) []float64 {
 	weights := make([]float64, n)
 	for j := range weights {
 		weights[j] = rand.Float64() - 0.5
@@ -67,11 +67,11 @@ func (nn *Network) forward(input []float64) ([]float64, []float64) {
 		output[i] = fns.Sigmoid(sum)
 	}
 
-	return output, hiddenActivations
+	return hiddenActivations, output
 }
 
 func (nn *Network) backward(input []float64, targetOutput []float64) {
-	output, hiddenActivations := nn.forward(input)
+	hiddenActivations, output := nn.forward(input)
 
 	outputError := make([]float64, nn.outputSize)
 	for i := range outputError {
@@ -117,7 +117,7 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 }
 
 func (nn *Network) Predict(input []float64) []float64 {
-	output, _ := nn.forward(input)
+	_, output := nn.forward(input)
 	return output
 }
 
