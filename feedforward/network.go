@@ -12,9 +12,9 @@ type Network struct {
 	hiddenSize          int
 	outputSize          int
 	weightsInputHidden  [][]float64
-	biasesInputHidden   []float64
+	biasesHidden        []float64
 	weightsHiddenOutput [][]float64
-	biasesHiddenOutput  []float64
+	biasesOutput        []float64
 	lr                  float64
 }
 
@@ -25,9 +25,9 @@ func New(inputSize, hiddenSize, outputSize int, lr float64) *Network {
 		hiddenSize:          hiddenSize,
 		outputSize:          outputSize,
 		weightsInputHidden:  randomMat(inputSize, hiddenSize),
-		biasesInputHidden:   randomVector(hiddenSize),
+		biasesHidden:        randomVector(hiddenSize),
 		weightsHiddenOutput: randomMat(hiddenSize, outputSize),
-		biasesHiddenOutput:  randomVector(outputSize),
+		biasesOutput:        randomVector(outputSize),
 		lr:                  lr,
 	}
 }
@@ -51,7 +51,7 @@ func randomVector(n int) []float64 {
 func (nn *Network) forward(input []float64) ([]float64, []float64) {
 	hiddenActivations := make([]float64, nn.hiddenSize)
 	for i := range hiddenActivations {
-		sum := nn.biasesInputHidden[i]
+		sum := nn.biasesHidden[i]
 		for j := range input {
 			sum += input[j] * nn.weightsInputHidden[j][i]
 		}
@@ -60,7 +60,7 @@ func (nn *Network) forward(input []float64) ([]float64, []float64) {
 
 	output := make([]float64, nn.outputSize)
 	for i := range output {
-		sum := nn.biasesHiddenOutput[i]
+		sum := nn.biasesOutput[i]
 		for j := range hiddenActivations {
 			sum += hiddenActivations[j] * nn.weightsHiddenOutput[j][i]
 		}
@@ -101,8 +101,8 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 		}
 	}
 
-	for i := range nn.biasesHiddenOutput {
-		nn.biasesHiddenOutput[i] += nn.lr * outputDelta[i]
+	for i := range nn.biasesOutput {
+		nn.biasesOutput[i] += nn.lr * outputDelta[i]
 	}
 
 	for i := range nn.weightsInputHidden {
@@ -111,8 +111,8 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 		}
 	}
 
-	for i := range nn.biasesInputHidden {
-		nn.biasesInputHidden[i] += nn.lr * hiddenDelta[i]
+	for i := range nn.biasesHidden {
+		nn.biasesHidden[i] += nn.lr * hiddenDelta[i]
 	}
 }
 
@@ -143,8 +143,8 @@ func (nn *Network) String() string {
 		nn.hiddenSize,
 		nn.outputSize,
 		nn.weightsInputHidden,
-		nn.biasesInputHidden,
+		nn.biasesHidden,
 		nn.weightsHiddenOutput,
-		nn.biasesHiddenOutput,
+		nn.biasesOutput,
 	)
 }
