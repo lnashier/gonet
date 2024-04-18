@@ -2,7 +2,8 @@ package xor
 
 import (
 	"fmt"
-	"github.com/lnashier/gonet/feedforward"
+	"github.com/lnashier/gonet"
+	"github.com/lnashier/gonet/fns"
 	"math"
 )
 
@@ -11,7 +12,6 @@ func Build() {
 	inputSize := 2
 	hiddenSize := 4
 	outputSize := 1
-	lr := 0.1
 
 	trainingData := [][]float64{
 		{0, 0},
@@ -26,7 +26,14 @@ func Build() {
 		{0},
 	}
 
-	nn := feedforward.New(inputSize, hiddenSize, outputSize, lr)
+	nn := gonet.Feedforward(
+		gonet.InputSize(inputSize),
+		gonet.HiddenSize(hiddenSize),
+		gonet.OutputSize(outputSize),
+		gonet.Activation(fns.Sigmoid),
+		gonet.ActivationDerivative(fns.SigmoidDerivative),
+		gonet.LearningRate(0.1),
+	)
 
 	nn.Train(trainingData, targetOutputs, 10000000, func(epoch int) {
 		if epoch%1000000 == 0 {

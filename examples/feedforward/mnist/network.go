@@ -2,7 +2,7 @@ package mnist
 
 import (
 	"fmt"
-	"github.com/lnashier/gonet/feedforward"
+	"github.com/lnashier/gonet"
 	"github.com/lnashier/gonet/fns"
 	"math"
 )
@@ -11,14 +11,20 @@ func Build(args []string) {
 	inputSize := 28 * 28
 	hiddenSize := 128
 	outputSize := 10
-	lr := 5.0
 
 	trainingInputs, trainingOutputs, err := trainingData(outputSize, args[0], args[1])
 	if err != nil {
 		panic(err)
 	}
 
-	nn := feedforward.New(inputSize, hiddenSize, outputSize, lr)
+	nn := gonet.Feedforward(
+		gonet.InputSize(inputSize),
+		gonet.HiddenSize(hiddenSize),
+		gonet.OutputSize(outputSize),
+		gonet.Activation(fns.Sigmoid),
+		gonet.ActivationDerivative(fns.SigmoidDerivative),
+		gonet.LearningRate(1),
+	)
 
 	nn.Train(trainingInputs, trainingOutputs, 1, func(epoch int) {
 		if epoch%100 == 0 {

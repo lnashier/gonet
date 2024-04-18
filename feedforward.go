@@ -1,13 +1,12 @@
-package feedforward
+package gonet
 
 import (
 	"fmt"
 	"github.com/lnashier/gonet/fns"
-	"math/rand"
 )
 
-// Network is a basic implementation of a Multilayer Perceptron (MLP) a fully connected feedforward neural network.
-type Network struct {
+// FeedforwardNetwork is a basic implementation of a Multilayer Perceptron (MLP) a fully connected feedforward neural network.
+type FeedforwardNetwork struct {
 	inputSize           int
 	hiddenSize          int
 	outputSize          int
@@ -16,46 +15,37 @@ type Network struct {
 	weightsHiddenOutput [][]float64
 	biasesOutput        []float64
 	lr                  float64
+	af                  func(float64) float64
+	fd                  func(float64) float64
 }
 
-// New initializes the weights and biases for the Network.
-func New(inputSize, hiddenSize, outputSize int, lr float64) *Network {
-	return &Network{
-		inputSize:           inputSize,
-		hiddenSize:          hiddenSize,
-		outputSize:          outputSize,
-		weightsInputHidden:  randomMat(inputSize, hiddenSize),
-		biasesHidden:        randomVector(hiddenSize),
-		weightsHiddenOutput: randomMat(hiddenSize, outputSize),
-		biasesOutput:        randomVector(outputSize),
-		lr:                  lr,
+// Feedforward initializes the weights and biases for the FeedforwardNetwork.
+func Feedforward(opt ...NetworkOpt) *FeedforwardNetwork {
+	opts := defaultNetworkOpts
+	opts.apply(opt)
+
+	return &FeedforwardNetwork{
+		inputSize:           opts.inputSize,
+		hiddenSize:          opts.hiddenSize,
+		outputSize:          opts.outputSize,
+		weightsInputHidden:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
+		biasesHidden:        fns.RandomVector(opts.hiddenSize),
+		weightsHiddenOutput: fns.RandomMat(opts.hiddenSize, opts.outputSize),
+		biasesOutput:        fns.RandomVector(opts.outputSize),
+		lr:                  opts.learningRate,
+		af:                  opts.activation,
+		fd:                  opts.activationDerivative,
 	}
 }
 
-func randomMat(rows, cols int) [][]float64 {
-	weights := make([][]float64, rows)
-	for i := range weights {
-		weights[i] = randomVector(cols)
-	}
-	return weights
-}
-
-func randomVector(n int) []float64 {
-	weights := make([]float64, n)
-	for j := range weights {
-		weights[j] = rand.Float64() - 0.5
-	}
-	return weights
-}
-
-func (nn *Network) forward(input []float64) ([]float64, []float64) {
+func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
 	hiddenActivations := make([]float64, nn.hiddenSize)
 	for i := range hiddenActivations {
 		sum := nn.biasesHidden[i]
 		for j := range input {
 			sum += input[j] * nn.weightsInputHidden[j][i]
 		}
-		hiddenActivations[i] = fns.Sigmoid(sum)
+		hiddenActivations[i] = nn.af(sum)
 	}
 
 	output := make([]float64, nn.outputSize)
@@ -64,13 +54,13 @@ func (nn *Network) forward(input []float64) ([]float64, []float64) {
 		for j := range hiddenActivations {
 			sum += hiddenActivations[j] * nn.weightsHiddenOutput[j][i]
 		}
-		output[i] = fns.Sigmoid(sum)
+		output[i] = nn.af(sum)
 	}
 
 	return hiddenActivations, output
 }
 
-func (nn *Network) backward(input []float64, targetOutput []float64) {
+func (nn *FeedforwardNetwork) backward(input []float64, targetOutput []float64) {
 	hiddenActivations, output := nn.forward(input)
 
 	outputError := make([]float64, nn.outputSize)
@@ -80,7 +70,7 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 
 	outputDelta := make([]float64, nn.outputSize)
 	for i := range outputDelta {
-		outputDelta[i] = outputError[i] * fns.SigmoidDerivative(output[i])
+		outputDelta[i] = outputError[i] * nn.fd(output[i])
 	}
 
 	hiddenError := make([]float64, nn.hiddenSize)
@@ -92,7 +82,7 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 
 	hiddenDelta := make([]float64, nn.hiddenSize)
 	for i := range hiddenDelta {
-		hiddenDelta[i] = hiddenError[i] * fns.SigmoidDerivative(hiddenActivations[i])
+		hiddenDelta[i] = hiddenError[i] * nn.fd(hiddenActivations[i])
 	}
 
 	for i := range nn.weightsHiddenOutput {
@@ -116,12 +106,12 @@ func (nn *Network) backward(input []float64, targetOutput []float64) {
 	}
 }
 
-func (nn *Network) Predict(input []float64) []float64 {
+func (nn *FeedforwardNetwork) Predict(input []float64) []float64 {
 	_, output := nn.forward(input)
 	return output
 }
 
-func (nn *Network) Train(inputs [][]float64, outputs [][]float64, epochs int, callback func(int)) {
+func (nn *FeedforwardNetwork) Train(inputs [][]float64, outputs [][]float64, epochs int, callback func(int)) {
 	for epoch := range epochs {
 		for i, input := range inputs {
 			nn.backward(input, outputs[i])
@@ -130,7 +120,7 @@ func (nn *Network) Train(inputs [][]float64, outputs [][]float64, epochs int, ca
 	}
 }
 
-func (nn *Network) String() string {
+func (nn *FeedforwardNetwork) String() string {
 	return fmt.Sprintf(
 		"Input Size: %d\n"+
 			"Hidden Size: %d\n"+
