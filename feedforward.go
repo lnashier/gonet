@@ -223,21 +223,21 @@ func (nn *FeedforwardNetwork) EpochStats(epoch int) EpochStats {
 }
 
 type TrainingStats struct {
-	Start  time.Time           `json:"start"`
-	End    time.Time           `json:"end"`
-	Epochs map[int]*EpochStats `json:"epochs"`
+	Start  time.Time
+	End    time.Time
+	Epochs map[int]*EpochStats
 }
 
 type EpochStats struct {
 	ID       int
-	Start    time.Time   `json:"start"`
-	End      time.Time   `json:"end"`
-	Inputs   int         `json:"inputs"`
-	Forward  *StageStats `json:"forward,omitempty"`
-	Backward *StageStats `json:"backward,omitempty"`
+	Start    time.Time
+	End      time.Time
+	Inputs   int
+	Forward  *StageStats
+	Backward *StageStats
 }
 
 type StageStats struct {
-	Duration time.Duration `json:"duration"`
-	Count    int           `json:"count"`
+	Duration time.Duration
+	Count    int
 }
