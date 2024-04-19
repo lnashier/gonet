@@ -7,6 +7,7 @@ replace github.com/lnashier/gonet => ../../../gonet
 require (
 	github.com/lnashier/goarc v0.8.0
 	github.com/lnashier/gonet v0.0.0
+	golang.org/x/sync v0.7.0
 )
 
 require (

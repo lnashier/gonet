@@ -9,9 +9,12 @@ type networkOpts struct {
 	learningRate         float64
 	activation           func(float64) float64
 	activationDerivative func(float64) float64
+	loadFrom             []byte
 }
 
-var defaultNetworkOpts = networkOpts{}
+var defaultNetworkOpts = networkOpts{
+	learningRate: 0.1,
+}
 
 func (s *networkOpts) apply(opts []NetworkOpt) {
 	for _, o := range opts {
@@ -52,5 +55,11 @@ func Activation(v func(float64) float64) NetworkOpt {
 func ActivationDerivative(v func(float64) float64) NetworkOpt {
 	return func(s *networkOpts) {
 		s.activationDerivative = v
+	}
+}
+
+func LoadFrom(v []byte) NetworkOpt {
+	return func(s *networkOpts) {
+		s.loadFrom = v
 	}
 }

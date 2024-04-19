@@ -1,22 +1,39 @@
 package gonet
 
 import (
-	"fmt"
+	"bytes"
+	"encoding/gob"
 	"github.com/lnashier/gonet/fns"
+	"io"
+	"time"
 )
 
-// FeedforwardNetwork is a basic implementation of a Multilayer Perceptron (MLP) a fully connected feedforward neural network.
+// FeedforwardNetwork is an implementation of a Multilayer Perceptron (MLP) a fully connected feedforward neural network.
 type FeedforwardNetwork struct {
-	inputSize           int
-	hiddenSize          int
-	outputSize          int
-	weightsInputHidden  [][]float64
-	biasesHidden        []float64
-	weightsHiddenOutput [][]float64
-	biasesOutput        []float64
-	lr                  float64
-	af                  func(float64) float64
-	fd                  func(float64) float64
+	ffn   *ffn
+	lr    float64
+	af    func(float64) float64
+	fd    func(float64) float64
+	stats *TrainingStats
+}
+
+type ffn struct {
+	InputSize           int
+	HiddenSize          int
+	OutputSize          int
+	WeightsInputHidden  [][]float64
+	BiasesHidden        []float64
+	WeightsHiddenOutput [][]float64
+	BiasesOutput        []float64
+}
+
+func LoadFeedforward(src io.Reader) (*FeedforwardNetwork, error) {
+	decoder := gob.NewDecoder(src)
+	var n ffn
+	if err := decoder.Decode(&n); err != nil {
+		return nil, err
+	}
+	return &FeedforwardNetwork{ffn: &n}, nil
 }
 
 // Feedforward initializes the weights and biases for the FeedforwardNetwork.
@@ -24,35 +41,54 @@ func Feedforward(opt ...NetworkOpt) *FeedforwardNetwork {
 	opts := defaultNetworkOpts
 	opts.apply(opt)
 
-	return &FeedforwardNetwork{
-		inputSize:           opts.inputSize,
-		hiddenSize:          opts.hiddenSize,
-		outputSize:          opts.outputSize,
-		weightsInputHidden:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
-		biasesHidden:        fns.RandomVector(opts.hiddenSize),
-		weightsHiddenOutput: fns.RandomMat(opts.hiddenSize, opts.outputSize),
-		biasesOutput:        fns.RandomVector(opts.outputSize),
-		lr:                  opts.learningRate,
-		af:                  opts.activation,
-		fd:                  opts.activationDerivative,
+	var nn *FeedforwardNetwork
+	if opts.loadFrom != nil {
+		var err error
+		nn, err = LoadFeedforward(bytes.NewBuffer(opts.loadFrom))
+		if err != nil {
+			panic(err)
+		}
+	} else {
+		nn = &FeedforwardNetwork{
+			ffn: &ffn{
+				InputSize:           opts.inputSize,
+				HiddenSize:          opts.hiddenSize,
+				OutputSize:          opts.outputSize,
+				WeightsInputHidden:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
+				BiasesHidden:        fns.RandomVector(opts.hiddenSize),
+				WeightsHiddenOutput: fns.RandomMat(opts.hiddenSize, opts.outputSize),
+				BiasesOutput:        fns.RandomVector(opts.outputSize),
+			},
+		}
 	}
+
+	nn.lr = opts.learningRate
+	nn.af = opts.activation
+	nn.fd = opts.activationDerivative
+
+	return nn
+}
+
+func (nn *FeedforwardNetwork) Save(w io.Writer) error {
+	encoder := gob.NewEncoder(w)
+	return encoder.Encode(nn.ffn)
 }
 
 func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
-	hiddenActivations := make([]float64, nn.hiddenSize)
+	hiddenActivations := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenActivations {
-		sum := nn.biasesHidden[i]
+		sum := nn.ffn.BiasesHidden[i]
 		for j := range input {
-			sum += input[j] * nn.weightsInputHidden[j][i]
+			sum += input[j] * nn.ffn.WeightsInputHidden[j][i]
 		}
 		hiddenActivations[i] = nn.af(sum)
 	}
 
-	output := make([]float64, nn.outputSize)
+	output := make([]float64, nn.ffn.OutputSize)
 	for i := range output {
-		sum := nn.biasesOutput[i]
+		sum := nn.ffn.BiasesOutput[i]
 		for j := range hiddenActivations {
-			sum += hiddenActivations[j] * nn.weightsHiddenOutput[j][i]
+			sum += hiddenActivations[j] * nn.ffn.WeightsHiddenOutput[j][i]
 		}
 		output[i] = nn.af(sum)
 	}
@@ -60,49 +96,47 @@ func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
 	return hiddenActivations, output
 }
 
-func (nn *FeedforwardNetwork) backward(input []float64, targetOutput []float64) {
-	hiddenActivations, output := nn.forward(input)
-
-	outputError := make([]float64, nn.outputSize)
+func (nn *FeedforwardNetwork) backward(input, targetOutput, hiddenActivations, output []float64) {
+	outputError := make([]float64, nn.ffn.OutputSize)
 	for i := range outputError {
 		outputError[i] = targetOutput[i] - output[i]
 	}
 
-	outputDelta := make([]float64, nn.outputSize)
+	outputDelta := make([]float64, nn.ffn.OutputSize)
 	for i := range outputDelta {
 		outputDelta[i] = outputError[i] * nn.fd(output[i])
 	}
 
-	hiddenError := make([]float64, nn.hiddenSize)
+	hiddenError := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenError {
-		for j := range nn.weightsHiddenOutput[i] {
-			hiddenError[i] += outputDelta[j] * nn.weightsHiddenOutput[i][j]
+		for j := range nn.ffn.WeightsHiddenOutput[i] {
+			hiddenError[i] += outputDelta[j] * nn.ffn.WeightsHiddenOutput[i][j]
 		}
 	}
 
-	hiddenDelta := make([]float64, nn.hiddenSize)
+	hiddenDelta := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenDelta {
 		hiddenDelta[i] = hiddenError[i] * nn.fd(hiddenActivations[i])
 	}
 
-	for i := range nn.weightsHiddenOutput {
-		for j := range nn.weightsHiddenOutput[i] {
-			nn.weightsHiddenOutput[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
+	for i := range nn.ffn.WeightsHiddenOutput {
+		for j := range nn.ffn.WeightsHiddenOutput[i] {
+			nn.ffn.WeightsHiddenOutput[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
 		}
 	}
 
-	for i := range nn.biasesOutput {
-		nn.biasesOutput[i] += nn.lr * outputDelta[i]
+	for i := range nn.ffn.BiasesOutput {
+		nn.ffn.BiasesOutput[i] += nn.lr * outputDelta[i]
 	}
 
-	for i := range nn.weightsInputHidden {
-		for j := range nn.weightsInputHidden[i] {
-			nn.weightsInputHidden[i][j] += nn.lr * input[i] * hiddenDelta[j]
+	for i := range nn.ffn.WeightsInputHidden {
+		for j := range nn.ffn.WeightsInputHidden[i] {
+			nn.ffn.WeightsInputHidden[i][j] += nn.lr * input[i] * hiddenDelta[j]
 		}
 	}
 
-	for i := range nn.biasesHidden {
-		nn.biasesHidden[i] += nn.lr * hiddenDelta[i]
+	for i := range nn.ffn.BiasesHidden {
+		nn.ffn.BiasesHidden[i] += nn.lr * hiddenDelta[i]
 	}
 }
 
@@ -111,30 +145,99 @@ func (nn *FeedforwardNetwork) Predict(input []float64) []float64 {
 	return output
 }
 
-func (nn *FeedforwardNetwork) Train(inputs [][]float64, outputs [][]float64, epochs int, callback func(int)) {
+func (nn *FeedforwardNetwork) Train(epochs int, inputs, outputs [][]float64, callback func(int) bool) {
+	nn.stats = &TrainingStats{
+		Start:  time.Now(),
+		Epochs: make(map[int]*EpochStats),
+	}
+	defer func() {
+		nn.stats.End = time.Now()
+	}()
+
 	for epoch := range epochs {
-		for i, input := range inputs {
-			nn.backward(input, outputs[i])
+		nn.stats.Epochs[epoch] = &EpochStats{
+			ID:       epoch,
+			Start:    time.Now(),
+			Forward:  &StageStats{},
+			Backward: &StageStats{},
 		}
-		callback(epoch)
+
+		for i, input := range inputs {
+			nn.stats.Epochs[epoch].Inputs++
+
+			forwardStart := time.Now()
+			hiddenActivations, output := nn.forward(input)
+			nn.stats.Epochs[epoch].Forward.Duration += time.Since(forwardStart)
+			nn.stats.Epochs[epoch].Forward.Count++
+
+			backwardStart := time.Now()
+			nn.backward(input, outputs[i], hiddenActivations, output)
+			nn.stats.Epochs[epoch].Backward.Duration += time.Since(backwardStart)
+			nn.stats.Epochs[epoch].Backward.Count++
+		}
+
+		nn.stats.Epochs[epoch].End = time.Now()
+
+		if !callback(epoch) {
+			break
+		}
 	}
 }
 
-func (nn *FeedforwardNetwork) String() string {
-	return fmt.Sprintf(
-		"Input Size: %d\n"+
-			"Hidden Size: %d\n"+
-			"Output Size: %d\n"+
-			"Weights Input to Hidden: %v\n"+
-			"Biases Input to Hidden: %v\n"+
-			"Weights Hidden to Output: %v\n"+
-			"Biases Hidden to Output: %v\n",
-		nn.inputSize,
-		nn.hiddenSize,
-		nn.outputSize,
-		nn.weightsInputHidden,
-		nn.biasesHidden,
-		nn.weightsHiddenOutput,
-		nn.biasesOutput,
-	)
+func (nn *FeedforwardNetwork) TrainingDuration() time.Duration {
+	if nn.stats == nil || nn.stats.Start.IsZero() {
+		return -1
+	}
+	if nn.stats.End.IsZero() {
+		return time.Since(nn.stats.Start)
+	}
+	return nn.stats.End.Sub(nn.stats.Start)
+}
+
+func (nn *FeedforwardNetwork) EpochDuration(epoch int) time.Duration {
+	if nn.stats == nil {
+		return -1
+	}
+	epochStats, ok := nn.stats.Epochs[epoch]
+	if ok {
+		if epochStats.Start.IsZero() {
+			return -1
+		}
+		if epochStats.End.IsZero() {
+			return time.Since(epochStats.Start)
+		}
+		return epochStats.End.Sub(epochStats.Start)
+	}
+	return -1
+}
+
+func (nn *FeedforwardNetwork) EpochStats(epoch int) EpochStats {
+	if nn.stats == nil {
+		return EpochStats{}
+	}
+	epochStats, ok := nn.stats.Epochs[epoch]
+	if ok {
+		return *epochStats
+	}
+	return EpochStats{}
+}
+
+type TrainingStats struct {
+	Start  time.Time           `json:"start"`
+	End    time.Time           `json:"end"`
+	Epochs map[int]*EpochStats `json:"epochs"`
+}
+
+type EpochStats struct {
+	ID       int
+	Start    time.Time   `json:"start"`
+	End      time.Time   `json:"end"`
+	Inputs   int         `json:"inputs"`
+	Forward  *StageStats `json:"forward,omitempty"`
+	Backward *StageStats `json:"backward,omitempty"`
+}
+
+type StageStats struct {
+	Duration time.Duration `json:"duration"`
+	Count    int           `json:"count"`
 }

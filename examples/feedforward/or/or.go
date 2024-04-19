@@ -35,8 +35,10 @@ func Build() {
 		gonet.LearningRate(1),
 	)
 
-	nn.Train(trainingData, targetOutputs, 10000, func(epoch int) {
-		if epoch%1000 == 0 {
+	epochs := 10000
+
+	nn.Train(epochs, trainingData, targetOutputs, func(epoch int) bool {
+		if epoch%(epochs/10) == 0 {
 			totalLoss := 0.0
 			for i, input := range trainingData {
 				output := nn.Predict(input)
@@ -47,9 +49,10 @@ func Build() {
 			averageLoss := totalLoss / float64(len(trainingData))
 			fmt.Printf("Epoch %04d, Loss: %f\n", epoch, averageLoss)
 		}
+		return true
 	})
 
-	fmt.Println(nn.String())
+	fmt.Println("TrainingDuration", nn.TrainingDuration())
 
 	for _, input := range trainingData {
 		output := nn.Predict(input)
