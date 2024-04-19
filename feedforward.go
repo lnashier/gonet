@@ -97,26 +97,18 @@ func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
 }
 
 func (nn *FeedforwardNetwork) backward(input, targetOutput, hiddenActivations, output []float64) {
-	outputError := make([]float64, nn.ffn.OutputSize)
-	for i := range outputError {
-		outputError[i] = targetOutput[i] - output[i]
-	}
-
 	outputDelta := make([]float64, nn.ffn.OutputSize)
 	for i := range outputDelta {
-		outputDelta[i] = outputError[i] * nn.fd(output[i])
-	}
-
-	hiddenError := make([]float64, nn.ffn.HiddenSize)
-	for i := range hiddenError {
-		for j := range nn.ffn.WeightsHiddenOutput[i] {
-			hiddenError[i] += outputDelta[j] * nn.ffn.WeightsHiddenOutput[i][j]
-		}
+		outputDelta[i] = (targetOutput[i] - output[i]) * nn.fd(output[i])
 	}
 
 	hiddenDelta := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenDelta {
-		hiddenDelta[i] = hiddenError[i] * nn.fd(hiddenActivations[i])
+		hiddenError := 0.0
+		for j := range nn.ffn.WeightsHiddenOutput[i] {
+			hiddenError += outputDelta[j] * nn.ffn.WeightsHiddenOutput[i][j]
+		}
+		hiddenDelta[i] = hiddenError * nn.fd(hiddenActivations[i])
 	}
 
 	for i := range nn.ffn.WeightsHiddenOutput {
