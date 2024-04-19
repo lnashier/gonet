@@ -1,6 +1,9 @@
 package fns
 
-import "math"
+import (
+	"math"
+	"math/rand"
+)
 
 func Sigmoid(x float64) float64 {
 	return 1 / (1 + math.Exp(-x))
@@ -46,4 +49,20 @@ func MeanSquaredError(predicted, target []float64) float64 {
 		sum += diff * diff
 	}
 	return sum / float64(len(predicted))
+}
+
+func RandomMat(rows, cols int) [][]float64 {
+	weights := make([][]float64, rows)
+	for i := range weights {
+		weights[i] = RandomVector(cols)
+	}
+	return weights
+}
+
+func RandomVector(n int) []float64 {
+	weights := make([]float64, n)
+	for j := range weights {
+		weights[j] = rand.Float64() - 0.5
+	}
+	return weights
 }

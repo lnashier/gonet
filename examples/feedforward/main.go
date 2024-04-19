@@ -20,7 +20,7 @@ func main() {
 				case "xor":
 					xor.Build()
 				case "mnist":
-					mnist.Build(args[1:])
+					mnist.Build(ctx, args[1:])
 				}
 				return nil
 			})

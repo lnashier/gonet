@@ -2,7 +2,8 @@ package or
 
 import (
 	"fmt"
-	"github.com/lnashier/gonet/feedforward"
+	"github.com/lnashier/gonet"
+	"github.com/lnashier/gonet/fns"
 	"math"
 )
 
@@ -11,7 +12,6 @@ func Build() {
 	inputSize := 2
 	hiddenSize := 4
 	outputSize := 1
-	lr := 10.0
 
 	trainingData := [][]float64{
 		{0, 0},
@@ -26,10 +26,19 @@ func Build() {
 		{1},
 	}
 
-	nn := feedforward.New(inputSize, hiddenSize, outputSize, lr)
+	nn := gonet.Feedforward(
+		gonet.InputSize(inputSize),
+		gonet.HiddenSize(hiddenSize),
+		gonet.OutputSize(outputSize),
+		gonet.Activation(fns.Sigmoid),
+		gonet.ActivationDerivative(fns.SigmoidDerivative),
+		gonet.LearningRate(1),
+	)
 
-	nn.Train(trainingData, targetOutputs, 10000, func(epoch int) {
-		if epoch%1000 == 0 {
+	epochs := 10000
+
+	nn.Train(epochs, trainingData, targetOutputs, func(epoch int) bool {
+		if epoch%(epochs/10) == 0 {
 			totalLoss := 0.0
 			for i, input := range trainingData {
 				output := nn.Predict(input)
@@ -40,9 +49,10 @@ func Build() {
 			averageLoss := totalLoss / float64(len(trainingData))
 			fmt.Printf("Epoch %04d, Loss: %f\n", epoch, averageLoss)
 		}
+		return true
 	})
 
-	fmt.Println(nn.String())
+	fmt.Println("TrainingDuration", nn.TrainingDuration())
 
 	for _, input := range trainingData {
 		output := nn.Predict(input)
