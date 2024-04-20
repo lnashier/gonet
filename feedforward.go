@@ -18,13 +18,13 @@ type FeedforwardNetwork struct {
 }
 
 type ffn struct {
-	InputSize           int
-	HiddenSize          int
-	OutputSize          int
-	WeightsInputHidden  [][]float64
-	BiasesHidden        []float64
-	WeightsHiddenOutput [][]float64
-	BiasesOutput        []float64
+	InputSize     int
+	WeightsInput  [][]float64
+	BiasesInput   []float64
+	HiddenSize    int
+	WeightsHidden [][]float64
+	BiasesHidden  []float64
+	OutputSize    int
 }
 
 func LoadFeedforward(src io.Reader) (*FeedforwardNetwork, error) {
@@ -51,13 +51,13 @@ func Feedforward(opt ...NetworkOpt) *FeedforwardNetwork {
 	} else {
 		nn = &FeedforwardNetwork{
 			ffn: &ffn{
-				InputSize:           opts.inputSize,
-				HiddenSize:          opts.hiddenSize,
-				OutputSize:          opts.outputSize,
-				WeightsInputHidden:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
-				BiasesHidden:        fns.RandomVector(opts.hiddenSize),
-				WeightsHiddenOutput: fns.RandomMat(opts.hiddenSize, opts.outputSize),
-				BiasesOutput:        fns.RandomVector(opts.outputSize),
+				InputSize:     opts.inputSize,
+				HiddenSize:    opts.hiddenSize,
+				OutputSize:    opts.outputSize,
+				WeightsInput:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
+				BiasesInput:   fns.RandomVector(opts.hiddenSize),
+				WeightsHidden: fns.RandomMat(opts.hiddenSize, opts.outputSize),
+				BiasesHidden:  fns.RandomVector(opts.outputSize),
 			},
 		}
 	}
@@ -77,18 +77,18 @@ func (nn *FeedforwardNetwork) Save(w io.Writer) error {
 func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
 	hiddenActivations := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenActivations {
-		sum := nn.ffn.BiasesHidden[i]
+		sum := nn.ffn.BiasesInput[i]
 		for j := range input {
-			sum += input[j] * nn.ffn.WeightsInputHidden[j][i]
+			sum += input[j] * nn.ffn.WeightsInput[j][i]
 		}
 		hiddenActivations[i] = nn.af(sum)
 	}
 
 	output := make([]float64, nn.ffn.OutputSize)
 	for i := range output {
-		sum := nn.ffn.BiasesOutput[i]
+		sum := nn.ffn.BiasesHidden[i]
 		for j := range hiddenActivations {
-			sum += hiddenActivations[j] * nn.ffn.WeightsHiddenOutput[j][i]
+			sum += hiddenActivations[j] * nn.ffn.WeightsHidden[j][i]
 		}
 		output[i] = nn.af(sum)
 	}
@@ -105,30 +105,30 @@ func (nn *FeedforwardNetwork) backward(input, targetOutput, hiddenActivations, o
 	hiddenDelta := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenDelta {
 		hiddenError := 0.0
-		for j := range nn.ffn.WeightsHiddenOutput[i] {
-			hiddenError += outputDelta[j] * nn.ffn.WeightsHiddenOutput[i][j]
+		for j := range nn.ffn.WeightsHidden[i] {
+			hiddenError += outputDelta[j] * nn.ffn.WeightsHidden[i][j]
 		}
 		hiddenDelta[i] = hiddenError * nn.fd(hiddenActivations[i])
 	}
 
-	for i := range nn.ffn.WeightsHiddenOutput {
-		for j := range nn.ffn.WeightsHiddenOutput[i] {
-			nn.ffn.WeightsHiddenOutput[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
-		}
-	}
-
-	for i := range nn.ffn.BiasesOutput {
-		nn.ffn.BiasesOutput[i] += nn.lr * outputDelta[i]
-	}
-
-	for i := range nn.ffn.WeightsInputHidden {
-		for j := range nn.ffn.WeightsInputHidden[i] {
-			nn.ffn.WeightsInputHidden[i][j] += nn.lr * input[i] * hiddenDelta[j]
+	for i := range nn.ffn.WeightsHidden {
+		for j := range nn.ffn.WeightsHidden[i] {
+			nn.ffn.WeightsHidden[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
 		}
 	}
 
 	for i := range nn.ffn.BiasesHidden {
-		nn.ffn.BiasesHidden[i] += nn.lr * hiddenDelta[i]
+		nn.ffn.BiasesHidden[i] += nn.lr * outputDelta[i]
+	}
+
+	for i := range nn.ffn.WeightsInput {
+		for j := range nn.ffn.WeightsInput[i] {
+			nn.ffn.WeightsInput[i][j] += nn.lr * input[i] * hiddenDelta[j]
+		}
+	}
+
+	for i := range nn.ffn.BiasesInput {
+		nn.ffn.BiasesInput[i] += nn.lr * hiddenDelta[i]
 	}
 }
 
