@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// FeedforwardNetwork is an implementation of a Multilayer Perceptron (MLP) a fully connected feedforward neural network.
+// FeedforwardNetwork is an implementation of a Multilayer Perceptron (MLP).
 type FeedforwardNetwork struct {
 	ffn   *ffn
 	lr    float64
@@ -20,21 +20,20 @@ type FeedforwardNetwork struct {
 
 type ffn struct {
 	InputSize     int
-	WeightsInput  [][]float64
-	BiasesInput   []float64
+	InputWeights  [][]float64
+	InputBiases   []float64
 	HiddenSize    int
-	WeightsHidden [][]float64
-	BiasesHidden  []float64
+	HiddenWeights [][]float64
+	HiddenBiases  []float64
 	OutputSize    int
 }
 
 func LoadFeedforward(src io.Reader) (*FeedforwardNetwork, error) {
-	decoder := gob.NewDecoder(src)
-	var n ffn
-	if err := decoder.Decode(&n); err != nil {
+	var fn ffn
+	if err := gob.NewDecoder(src).Decode(&fn); err != nil {
 		return nil, err
 	}
-	return &FeedforwardNetwork{ffn: &n}, nil
+	return &FeedforwardNetwork{ffn: &fn}, nil
 }
 
 // Feedforward initializes the weights and biases for the FeedforwardNetwork.
@@ -55,10 +54,10 @@ func Feedforward(opt ...NetworkOpt) *FeedforwardNetwork {
 				InputSize:     opts.inputSize,
 				HiddenSize:    opts.hiddenSize,
 				OutputSize:    opts.outputSize,
-				WeightsInput:  fns.RandomMat(opts.inputSize, opts.hiddenSize),
-				BiasesInput:   fns.RandomVector(opts.hiddenSize),
-				WeightsHidden: fns.RandomMat(opts.hiddenSize, opts.outputSize),
-				BiasesHidden:  fns.RandomVector(opts.outputSize),
+				InputWeights:  fns.RandomMatrix(opts.inputSize, opts.hiddenSize),
+				InputBiases:   fns.RandomVector(opts.hiddenSize),
+				HiddenWeights: fns.RandomMatrix(opts.hiddenSize, opts.outputSize),
+				HiddenBiases:  fns.RandomVector(opts.outputSize),
 			},
 		}
 	}
@@ -71,26 +70,30 @@ func Feedforward(opt ...NetworkOpt) *FeedforwardNetwork {
 }
 
 func (nn *FeedforwardNetwork) Save(w io.Writer) error {
-	encoder := gob.NewEncoder(w)
-	return encoder.Encode(nn.ffn)
+	return gob.NewEncoder(w).Encode(nn.ffn)
 }
 
 func (nn *FeedforwardNetwork) forward(input []float64) ([]float64, []float64) {
 	hiddenActivations := make([]float64, nn.ffn.HiddenSize)
+
 	for i := range hiddenActivations {
-		sum := nn.ffn.BiasesInput[i]
+		sum := nn.ffn.InputBiases[i]
+
 		for j := range input {
-			sum += input[j] * nn.ffn.WeightsInput[j][i]
+			sum += input[j] * nn.ffn.InputWeights[j][i]
 		}
+
 		hiddenActivations[i] = nn.af(sum)
 	}
 
 	output := make([]float64, nn.ffn.OutputSize)
 	for i := range output {
-		sum := nn.ffn.BiasesHidden[i]
+		sum := nn.ffn.HiddenBiases[i]
+
 		for j := range hiddenActivations {
-			sum += hiddenActivations[j] * nn.ffn.WeightsHidden[j][i]
+			sum += hiddenActivations[j] * nn.ffn.HiddenWeights[j][i]
 		}
+
 		output[i] = nn.af(sum)
 	}
 
@@ -105,31 +108,31 @@ func (nn *FeedforwardNetwork) backward(input, targetOutput, hiddenActivations, o
 
 	hiddenDelta := make([]float64, nn.ffn.HiddenSize)
 	for i := range hiddenDelta {
-		hiddenError := 0.0
-		for j := range nn.ffn.WeightsHidden[i] {
-			hiddenError += outputDelta[j] * nn.ffn.WeightsHidden[i][j]
+		hiddenErr := 0.0
+		for j := range nn.ffn.HiddenWeights[i] {
+			hiddenErr += outputDelta[j] * nn.ffn.HiddenWeights[i][j]
 		}
-		hiddenDelta[i] = hiddenError * nn.fd(hiddenActivations[i])
+		hiddenDelta[i] = hiddenErr * nn.fd(hiddenActivations[i])
 	}
 
-	for i := range nn.ffn.WeightsHidden {
-		for j := range nn.ffn.WeightsHidden[i] {
-			nn.ffn.WeightsHidden[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
-		}
-	}
-
-	for i := range nn.ffn.BiasesHidden {
-		nn.ffn.BiasesHidden[i] += nn.lr * outputDelta[i]
-	}
-
-	for i := range nn.ffn.WeightsInput {
-		for j := range nn.ffn.WeightsInput[i] {
-			nn.ffn.WeightsInput[i][j] += nn.lr * input[i] * hiddenDelta[j]
+	for i := range nn.ffn.HiddenWeights {
+		for j := range nn.ffn.HiddenWeights[i] {
+			nn.ffn.HiddenWeights[i][j] += nn.lr * hiddenActivations[i] * outputDelta[j]
 		}
 	}
 
-	for i := range nn.ffn.BiasesInput {
-		nn.ffn.BiasesInput[i] += nn.lr * hiddenDelta[i]
+	for i := range nn.ffn.HiddenBiases {
+		nn.ffn.HiddenBiases[i] += nn.lr * outputDelta[i]
+	}
+
+	for i := range nn.ffn.InputWeights {
+		for j := range nn.ffn.InputWeights[i] {
+			nn.ffn.InputWeights[i][j] += nn.lr * input[i] * hiddenDelta[j]
+		}
+	}
+
+	for i := range nn.ffn.InputBiases {
+		nn.ffn.InputBiases[i] += nn.lr * hiddenDelta[i]
 	}
 }
 

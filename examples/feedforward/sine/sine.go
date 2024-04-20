@@ -8,7 +8,30 @@ import (
 	"github.com/lnashier/gonet/help"
 	"math"
 	"math/rand"
+	"os"
 )
+
+func getModel(name string) (*gonet.FeedforwardNetwork, bool) {
+	model, _ := os.ReadFile(name)
+	return gonet.Feedforward(
+		gonet.LoadFrom(model),
+		gonet.InputSize(1),
+		gonet.HiddenSize(32),
+		gonet.OutputSize(1),
+		gonet.Activation(fns.ReLU),
+		gonet.ActivationDerivative(fns.ReLUDerivative),
+		gonet.LearningRate(0.1),
+	), len(model) > 0
+}
+
+func saveModel(name string, nn *gonet.FeedforwardNetwork) error {
+	file, err := os.Create(name)
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	return nn.Save(file)
+}
 
 func trainingData() ([][]float64, [][]float64) {
 	samples := 10000
@@ -24,22 +47,19 @@ func trainingData() ([][]float64, [][]float64) {
 	return trainingInputs, targetOutputs
 }
 
-// Build creates and train Sine function
+// Build creates and trains Sine function
 func Build(ctx context.Context) {
-	trainingInputs, targetOutputs := trainingData()
-
-	nn := gonet.Feedforward(
-		gonet.InputSize(1),
-		gonet.HiddenSize(32),
-		gonet.OutputSize(1),
-		gonet.Activation(fns.ReLU),
-		gonet.ActivationDerivative(fns.ReLUDerivative),
-		gonet.LearningRate(0.1),
-	)
+	nn, loaded := getModel("bin/sine.gob")
 
 	fmt.Println(nn.String())
 
-	help.Train(ctx, nn, 100000, trainingInputs, targetOutputs)
+	if !loaded {
+		trainingInputs, targetOutputs := trainingData()
+		help.Train(ctx, nn, 100000, trainingInputs, targetOutputs)
+		if err := saveModel("bin/sine.gob", nn); err != nil {
+			panic(err)
+		}
+	}
 
 	for i := 0; i < 10; i++ {
 		input := []float64{rand.Float64() * 2 * math.Pi}

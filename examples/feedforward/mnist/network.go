@@ -66,6 +66,9 @@ func test(ctx context.Context, nn *gonet.FeedforwardNetwork, inputs [][][]uint8,
 
 func Build(ctx context.Context, args []string) {
 	nn, loaded := getModel("bin/mnist.gob")
+
+	fmt.Println(nn.String())
+
 	if !loaded {
 		trainingInputs, trainingOutputs, err := trainingData(10, args[0], args[1])
 		if err != nil {

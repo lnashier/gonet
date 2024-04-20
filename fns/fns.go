@@ -61,18 +61,18 @@ func MeanSquaredError(predicted, target []float64) float64 {
 	return sum / float64(len(predicted))
 }
 
-func RandomMat(rows, cols int) [][]float64 {
-	weights := make([][]float64, rows)
-	for i := range weights {
-		weights[i] = RandomVector(cols)
+func RandomMatrix(rows, cols int) [][]float64 {
+	mat := make([][]float64, rows)
+	for i := range mat {
+		mat[i] = RandomVector(cols)
 	}
-	return weights
+	return mat
 }
 
 func RandomVector(n int) []float64 {
-	weights := make([]float64, n)
-	for j := range weights {
-		weights[j] = rand.Float64() - 0.5
+	vec := make([]float64, n)
+	for j := range vec {
+		vec[j] = rand.Float64() - 0.5
 	}
-	return weights
+	return vec
 }

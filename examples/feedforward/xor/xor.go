@@ -48,11 +48,12 @@ func Build(ctx context.Context) {
 	}
 
 	nn, loaded := getModel("bin/xor.gob")
+
+	fmt.Println(nn.String())
+
 	if !loaded {
 		help.Train(ctx, nn, 10000000, trainingData, targetOutputs)
-
-		err := saveModel("bin/xor.gob", nn)
-		if err != nil {
+		if err := saveModel("bin/xor.gob", nn); err != nil {
 			panic(err)
 		}
 	}
