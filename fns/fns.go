@@ -6,10 +6,13 @@ import (
 )
 
 func Sigmoid(x float64) float64 {
+	// sigmoid(x) = 1 / (1 + exp(-x))
 	return 1 / (1 + math.Exp(-x))
 }
 
 func SigmoidDerivative(x float64) float64 {
+	// sigmoid'(j) = sigmoid(j) * (1 - sigmoid(j))
+	// here x = sigmoid(j)
 	return x * (1 - x)
 }
 
@@ -21,10 +24,17 @@ func ReLU(x float64) float64 {
 }
 
 func ReLUDerivative(x float64) float64 {
-	if x > 0 {
-		return 1
-	}
-	return 0
+	return ReLU(x)
+}
+
+func Tanh(x float64) float64 {
+	return math.Tanh(x)
+}
+
+func TanhDerivative(x float64) float64 {
+	// tanh'(j) = 1 - tanh^2(j)
+	// here x = math.Tanh(j)
+	return 1 - math.Pow(x, 2)
 }
 
 func Argmax(values []float64) int {

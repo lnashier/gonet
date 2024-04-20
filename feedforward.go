@@ -3,6 +3,7 @@ package gonet
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 	"github.com/lnashier/gonet/fns"
 	"io"
 	"time"
@@ -174,6 +175,19 @@ func (nn *FeedforwardNetwork) Train(epochs int, inputs, outputs [][]float64, cal
 			break
 		}
 	}
+}
+
+func (nn *FeedforwardNetwork) String() string {
+	return fmt.Sprintf(
+		"Input Size: %d\n"+
+			"Hidden Size: %d\n"+
+			"Output Size: %d\n"+
+			"Learning Rate: %.4f\n",
+		nn.ffn.InputSize,
+		nn.ffn.HiddenSize,
+		nn.ffn.OutputSize,
+		nn.lr,
+	)
 }
 
 func (nn *FeedforwardNetwork) TrainingDuration() time.Duration {
