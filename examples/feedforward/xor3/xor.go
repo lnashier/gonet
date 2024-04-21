@@ -3,7 +3,7 @@ package xor3
 import (
 	"context"
 	"fmt"
-	"github.com/lnashier/gonet"
+	"github.com/lnashier/gonet/feedforward"
 	"github.com/lnashier/gonet/fns"
 	"github.com/lnashier/gonet/help"
 )
@@ -14,25 +14,28 @@ func Build(ctx context.Context) {
 	inputSize := 3
 	// Output is a single value 0 or 1
 	outputSize := 1
-	// Don't worry about this too much at this moment
-	// It is simply saying how many nodes in first hidden layer
-	// since only single layer FFN is supported
+	// Nodes in hidden layer
 	hiddenSize := 4
 
-	nn := gonet.Feedforward(
-		gonet.InputSize(inputSize),   // defined above
-		gonet.HiddenSize(hiddenSize), // defined above
-		gonet.OutputSize(outputSize), // defined above
-		// Sigmoid function squashes the output to the range [0, 1], that makes it suitable for binary classification.
-		// tanh does [-1, 1]
-		gonet.Activation(fns.Sigmoid),                     // this is chosen based on prior knowledge of training data.
-		gonet.ActivationDerivative(fns.SigmoidDerivative), // backpropagation
-		gonet.LearningRate(0.1),                           // Learning rate, choose wisely
+	nn := feedforward.New(
+		// defined above
+		feedforward.Shapes([]int{inputSize, hiddenSize, outputSize}),
+
+		// This is chosen based on prior knowledge of training data.
+		// Sigmoid function squashes the output to the range [0, 1],
+		// that makes it suitable for binary classification.
+		feedforward.Activation(fns.Sigmoid),
+
+		// backpropagation
+		feedforward.ActivationDerivative(fns.SigmoidDerivative),
+
+		// Learning rate, choose wisely
+		feedforward.LearningRate(0.1),
 	)
 
 	fmt.Println(nn.String())
 
-	trainingInputs := [][]float64{
+	inputs := [][]float64{
 		{0, 0, 0},
 		{0, 0, 1},
 		{0, 1, 0},
@@ -42,7 +45,7 @@ func Build(ctx context.Context) {
 		{1, 1, 0},
 		{1, 1, 1},
 	}
-	targetOutputs := [][]float64{
+	targets := [][]float64{
 		{0},
 		{1},
 		{1},
@@ -53,9 +56,9 @@ func Build(ctx context.Context) {
 		{0},
 	}
 
-	help.Train(ctx, nn, 10000, trainingInputs, targetOutputs)
+	help.Train(ctx, nn, 100000, inputs, targets)
 
-	for _, input := range trainingInputs {
+	for _, input := range inputs {
 		output := nn.Predict(input)
 		fmt.Println(input, "->", output)
 	}

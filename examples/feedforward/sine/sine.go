@@ -3,7 +3,7 @@ package sine
 import (
 	"context"
 	"fmt"
-	"github.com/lnashier/gonet"
+	"github.com/lnashier/gonet/feedforward"
 	"github.com/lnashier/gonet/fns"
 	"github.com/lnashier/gonet/help"
 	"math"
@@ -11,52 +11,61 @@ import (
 	"os"
 )
 
-func getModel(name string) (*gonet.FeedforwardNetwork, bool) {
-	model, _ := os.ReadFile(name)
-	return gonet.Feedforward(
-		gonet.LoadFrom(model),
-		gonet.InputSize(1),
-		gonet.HiddenSize(32),
-		gonet.OutputSize(1),
-		gonet.Activation(fns.ReLU),
-		gonet.ActivationDerivative(fns.ReLUDerivative),
-		gonet.LearningRate(0.1),
-	), len(model) > 0
-}
+func loadModel(name string) *feedforward.Network {
+	model, err := os.Open(name)
+	if err != nil {
+		return nil
+	}
+	defer model.Close()
 
-func saveModel(name string, nn *gonet.FeedforwardNetwork) error {
-	file, err := os.Create(name)
+	nn, err := feedforward.Load(
+		model,
+		feedforward.Activation(fns.ReLU),
+		feedforward.ActivationDerivative(fns.ReLUDerivative),
+		feedforward.LearningRate(0.1),
+	)
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
-	return nn.Save(file)
+	return nn
+}
+
+func getModel(name string) (*feedforward.Network, bool) {
+	nn := loadModel(name)
+	if nn == nil {
+		return feedforward.New(
+			feedforward.Shapes([]int{1, 100, 1}),
+			feedforward.Activation(fns.ReLU),
+			feedforward.ActivationDerivative(fns.ReLUDerivative),
+			feedforward.LearningRate(0.1),
+		), false
+	}
+	return nn, true
 }
 
 func trainingData() ([][]float64, [][]float64) {
 	samples := 10000
 	trainingInputs := make([][]float64, samples)
 	targetOutputs := make([][]float64, samples)
-
 	for i := 0; i < samples; i++ {
 		// Random angles in the range [0, 2*pi]
 		trainingInputs[i] = []float64{rand.Float64() * 2 * math.Pi}
 		targetOutputs[i] = []float64{math.Sin(trainingInputs[i][0])}
 	}
-
 	return trainingInputs, targetOutputs
 }
 
 // Build creates and trains Sine function
+// TODO requires more work
 func Build(ctx context.Context) {
 	nn, loaded := getModel("bin/sine.gob")
 
 	fmt.Println(nn.String())
 
 	if !loaded {
-		trainingInputs, targetOutputs := trainingData()
-		help.Train(ctx, nn, 100000, trainingInputs, targetOutputs)
-		if err := saveModel("bin/sine.gob", nn); err != nil {
+		inputs, targets := trainingData()
+		help.Train(ctx, nn, 10000, inputs, targets)
+		if err := help.Save("bin/sine.gob", nn); err != nil {
 			panic(err)
 		}
 	}

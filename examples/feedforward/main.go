@@ -7,6 +7,7 @@ import (
 	"feedforward/sine"
 	"feedforward/xor"
 	"feedforward/xor3"
+	"fmt"
 	"github.com/lnashier/goarc"
 	goarccli "github.com/lnashier/goarc/cli"
 )
@@ -27,6 +28,8 @@ func main() {
 					sine.Build(ctx)
 				case "mnist":
 					mnist.Build(ctx, args[1:])
+				default:
+					return fmt.Errorf("model not found: %s", args[0])
 				}
 				return nil
 			})
