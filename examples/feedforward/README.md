@@ -63,5 +63,5 @@ array of length 784 (28x28), which serves as the input to the neural network. Th
 to the 10 classes of digits (0-9) in the MNIST dataset.
 
 ```shell
-go run . build mnist bin/train-images-idx3-ubyte.gz bin/train-labels-idx1-ubyte.gz bin/t10k-images-idx3-ubyte.gz bin/t10k-labels-idx1-ubyte.gz
+go run . build mnist bin/data/mnist/train-images-idx3-ubyte.gz bin/data/mnist/train-labels-idx1-ubyte.gz bin/data/mnist/t10k-images-idx3-ubyte.gz bin/data/mnist/t10k-labels-idx1-ubyte.gz
 ```
