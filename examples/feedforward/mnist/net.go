@@ -42,7 +42,7 @@ func getModel(name string) (*feedforward.Network, bool) {
 	return nn, true
 }
 
-func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, outputs []uint8) {
+func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, targets []uint8) {
 	var correctPredictions int
 	var predictions int
 
@@ -60,11 +60,12 @@ func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, outputs []u
 		prediction := nn.Predict(flattenImage(input))
 		predictions++
 		output := fns.Argmax(prediction)
-		if output == int(outputs[i]) {
+		if output == int(targets[i]) {
 			correctPredictions++
 		} else {
+			// uncomment to save wrong predictions
 			/*
-				err := saveImage(input, fmt.Sprintf("bin/wrong/image-p%d-r%d.png", output, outputs[i]))
+				err := saveImage(input, fmt.Sprintf("bin/wrong/image_%d-p%d-r%d.png", i, output, targets[i]))
 				if err != nil {
 					panic(err)
 				}
@@ -76,10 +77,11 @@ func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, outputs []u
 func Build(ctx context.Context, args []string) {
 	nn, loaded := getModel("bin/mnist.gob")
 
+	fmt.Println("loaded", loaded)
 	fmt.Println(nn.String())
 
-	// not retraining
-	if !loaded {
+	// resuming training or not trained
+	if (len(args) > 4 && args[4] == "1") || !loaded {
 		inputs, targets, err := trainingData(10, args[0], args[1])
 		if err != nil {
 			panic(err)

@@ -21,7 +21,7 @@ func loadModel(name string) *feedforward.Network {
 		feedforward.Activation(fns.Sigmoid),
 		// network may be retrained (resume training)
 		feedforward.ActivationDerivative(fns.SigmoidDerivative),
-		feedforward.LearningRate(0.1),
+		feedforward.LearningRate(0.01),
 	)
 	if err != nil {
 		panic(err)
@@ -34,7 +34,7 @@ func getModel(name string) (*feedforward.Network, bool) {
 	if nn == nil {
 		return feedforward.New(
 			feedforward.Shapes([]int{2, 4, 1}),
-			feedforward.LearningRate(0.01),
+			feedforward.LearningRate(0.5),
 			feedforward.Activation(fns.Sigmoid),
 			feedforward.ActivationDerivative(fns.SigmoidDerivative),
 		), false
@@ -43,9 +43,10 @@ func getModel(name string) (*feedforward.Network, bool) {
 }
 
 // Build trains a XOR function
-func Build(ctx context.Context) {
+func Build(ctx context.Context, args []string) {
 	nn, loaded := getModel("bin/xor.gob")
 
+	fmt.Println("loaded", loaded)
 	fmt.Println(nn.String())
 
 	var inputs = [][]float64{
@@ -62,8 +63,8 @@ func Build(ctx context.Context) {
 		{0},
 	}
 
-	// not retraining
-	if !loaded {
+	// resuming training or not trained
+	if (len(args) > 0 && args[0] == "1") || !loaded {
 		help.Train(ctx, nn, 100000, inputs, targets)
 		if err := help.Save("bin/xor.gob", nn); err != nil {
 			panic(err)

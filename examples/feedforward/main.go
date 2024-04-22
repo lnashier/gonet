@@ -21,11 +21,11 @@ func main() {
 				case "or":
 					or.Build(ctx)
 				case "xor":
-					xor.Build(ctx)
+					xor.Build(ctx, args[1:])
 				case "xor3":
 					xor3.Build(ctx)
 				case "sine":
-					sine.Build(ctx)
+					sine.Build(ctx, args[1:])
 				case "mnist":
 					mnist.Build(ctx, args[1:])
 				default:

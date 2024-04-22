@@ -57,12 +57,14 @@ func trainingData() ([][]float64, [][]float64) {
 
 // Build creates and trains Sine function
 // TODO requires more work
-func Build(ctx context.Context) {
+func Build(ctx context.Context, args []string) {
 	nn, loaded := getModel("bin/sine.gob")
 
+	fmt.Println("loaded", loaded)
 	fmt.Println(nn.String())
 
-	if !loaded {
+	// resuming training or not trained
+	if (len(args) > 0 && args[0] == "1") || !loaded {
 		inputs, targets := trainingData()
 		help.Train(ctx, nn, 10000, inputs, targets)
 		if err := help.Save("bin/sine.gob", nn); err != nil {
