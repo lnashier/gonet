@@ -49,30 +49,112 @@ func Argmax(values []float64) int {
 	return maxIndex
 }
 
-func MeanSquaredError(predicted, target []float64) float64 {
-	if len(predicted) != len(target) {
-		panic("predicted and target output sizes must match")
+func RandomMatrix(rows, cols int) [][]float64 {
+	mat := make([][]float64, rows)
+	for i := range mat {
+		mat[i] = RandomVector(cols)
 	}
-	var sum float64
-	for i := range predicted {
-		diff := predicted[i] - target[i]
-		sum += diff * diff
-	}
-	return sum / float64(len(predicted))
-}
-
-func RandomMat(rows, cols int) [][]float64 {
-	weights := make([][]float64, rows)
-	for i := range weights {
-		weights[i] = RandomVector(cols)
-	}
-	return weights
+	return mat
 }
 
 func RandomVector(n int) []float64 {
-	weights := make([]float64, n)
-	for j := range weights {
-		weights[j] = rand.Float64() - 0.5
+	vec := make([]float64, n)
+	for j := range vec {
+		vec[j] = rand.Float64() - 0.5
 	}
-	return weights
+	return vec
+}
+
+// FnVec applies given function f to each element of the vector.
+func FnVec(vec []float64, f func(float64) float64) []float64 {
+	result := make([]float64, len(vec))
+	for i, v := range vec {
+		result[i] = f(v)
+	}
+	return result
+}
+
+// Scalar multiplies a vector by a scalar.
+func Scalar(vec []float64, scalar float64) []float64 {
+	result := make([]float64, len(vec))
+	for i, v := range vec {
+		result[i] = v * scalar
+	}
+	return result
+}
+
+// Dot computes the dot product of two matrices.
+func Dot(mat1 [][]float64, mat2 [][]float64) [][]float64 {
+	if len(mat1[0]) != len(mat2) {
+		panic("can't multiply matrices")
+	}
+
+	result := make([][]float64, len(mat1))
+
+	for i := 0; i < len(mat1); i++ {
+		result[i] = make([]float64, len(mat2[0]))
+		for j := 0; j < len(mat2[0]); j++ {
+			dot := 0.0
+			for k := 0; k < len(mat2); k++ {
+				dot += mat1[i][k] * mat2[k][j]
+			}
+			result[i][j] = dot
+		}
+	}
+
+	return result
+}
+
+// Transpose computes the transpose of a matrix.
+func Transpose(mat [][]float64) [][]float64 {
+	result := make([][]float64, len(mat[0]))
+	for i := range result {
+		result[i] = make([]float64, len(mat))
+		for j := range result[i] {
+			result[i][j] = mat[j][i]
+		}
+	}
+	return result
+}
+
+// AddVec adds two vectors element-wise.
+func AddVec(vec1, vec2 []float64) []float64 {
+	result := make([]float64, len(vec1))
+	for i := range result {
+		result[i] = vec1[i] + vec2[i]
+	}
+	return result
+}
+
+// SubtractVec subtracts one vector from another element-wise.
+func SubtractVec(vec1, vec2 []float64) []float64 {
+	result := make([]float64, len(vec1))
+	for i := range result {
+		result[i] = vec1[i] - vec2[i]
+	}
+	return result
+}
+
+// AddMat adds two matrices element-wise.
+func AddMat(mat1, mat2 [][]float64) [][]float64 {
+	result := make([][]float64, len(mat1))
+	for i := range result {
+		result[i] = make([]float64, len(mat1[i]))
+		for j := range result[i] {
+			result[i][j] = mat1[i][j] + mat2[i][j]
+		}
+	}
+	return result
+}
+
+// SubtractMat subtracts one matrix from another element-wise.
+func SubtractMat(mat1, mat2 [][]float64) [][]float64 {
+	result := make([][]float64, len(mat1))
+	for i := range result {
+		result[i] = make([]float64, len(mat1[i]))
+		for j := range result[i] {
+			result[i][j] = mat1[i][j] - mat2[i][j]
+		}
+	}
+	return result
 }

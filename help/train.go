@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func Train(ctx context.Context, nn *gonet.FeedforwardNetwork, epochs int, inputs, outputs [][]float64) {
+func Train(ctx context.Context, nn gonet.Network, epochs int, inputs, outputs [][]float64) {
 	wg, trainCtx := errgroup.WithContext(ctx)
 
 	trainingDone := make(chan struct{})
@@ -19,7 +19,7 @@ func Train(ctx context.Context, nn *gonet.FeedforwardNetwork, epochs int, inputs
 		nn.Train(epochs, inputs, outputs, func(epoch int) bool {
 			currentEpoch = epoch
 
-			if epoch%(epochs/10) == 0 {
+			if currentEpoch%(epochs/10) == 0 {
 				totalLoss := 0.0
 				for i, input := range inputs {
 					output := nn.Predict(input)
@@ -28,7 +28,16 @@ func Train(ctx context.Context, nn *gonet.FeedforwardNetwork, epochs int, inputs
 					}
 				}
 				averageLoss := totalLoss / float64(len(inputs))
-				fmt.Printf("Epoch %04d, Loss: %f\n", epoch, averageLoss)
+				fmt.Printf("Epoch %04d, Loss: %f\n", currentEpoch, averageLoss)
+
+				stats := nn.EpochStats(currentEpoch)
+				if stats.Inputs != 0 {
+					end := stats.End
+					if end.IsZero() {
+						end = time.Now()
+					}
+					fmt.Printf("Epoch:(%d) Inputs:(%d) Duration:(%v)\n", stats.ID, stats.Inputs, end.Sub(stats.Start))
+				}
 			}
 
 			contTraining := true
@@ -56,16 +65,7 @@ func Train(ctx context.Context, nn *gonet.FeedforwardNetwork, epochs int, inputs
 					if end.IsZero() {
 						end = time.Now()
 					}
-					fmt.Printf(
-						"Epoch:(%d) Inputs:(%d) Duration:(%v) Forward:(%d)(%v) Backward:(%d)(%v)\n",
-						stats.ID,
-						stats.Inputs,
-						end.Sub(stats.Start),
-						stats.Forward.Count,
-						stats.Forward.Duration,
-						stats.Backward.Count,
-						stats.Backward.Duration,
-					)
+					fmt.Printf("Epoch:(%d) Inputs:(%d) Duration:(%v)\n", stats.ID, stats.Inputs, end.Sub(stats.Start))
 				}
 			}
 		}

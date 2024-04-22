@@ -7,6 +7,7 @@ import (
 	"feedforward/sine"
 	"feedforward/xor"
 	"feedforward/xor3"
+	"fmt"
 	"github.com/lnashier/goarc"
 	goarccli "github.com/lnashier/goarc/cli"
 )
@@ -20,13 +21,15 @@ func main() {
 				case "or":
 					or.Build(ctx)
 				case "xor":
-					xor.Build(ctx)
+					xor.Build(ctx, args[1:])
 				case "xor3":
 					xor3.Build(ctx)
 				case "sine":
-					sine.Build(ctx)
+					sine.Build(ctx, args[1:])
 				case "mnist":
 					mnist.Build(ctx, args[1:])
+				default:
+					return fmt.Errorf("model not found: %s", args[0])
 				}
 				return nil
 			})
