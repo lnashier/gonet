@@ -21,7 +21,7 @@ type Layer struct {
 
 type Network struct {
 	shapes []int
-	Layers []*Layer
+	layers []*Layer
 	stats  *stats.Training
 	af     func(float64) float64
 	fd     func(float64) float64
@@ -29,28 +29,27 @@ type Network struct {
 }
 
 func Load(src io.Reader, opt ...NetworkOpt) (*Network, error) {
-	var nn Network
-	if err := gob.NewDecoder(src).Decode(&nn); err != nil {
+	var layers []*Layer
+	if err := gob.NewDecoder(src).Decode(&layers); err != nil {
 		return nil, err
 	}
 
 	opts := defaultNetworkOpts
 	opts.apply(opt)
 
-	nn.shapes = make([]int, len(nn.Layers)+1)
-	nn.shapes[0] = len(nn.Layers[0].Nodes[0].Weights)
-	for i, layer := range nn.Layers {
+	nn := &Network{layers: layers}
+	nn.shapes = make([]int, len(nn.layers)+1)
+	nn.shapes[0] = len(nn.layers[0].Nodes[0].Weights)
+	for i, layer := range nn.layers {
 		nn.shapes[i+1] = len(layer.Nodes)
 	}
-
-	// predict
+	// prediction
 	nn.af = opts.activation
-
 	// network may be retrained (resume training)
 	nn.fd = opts.activationDerivative
 	nn.lr = opts.learningRate
 
-	return &nn, nil
+	return nn, nil
 }
 
 func New(opt ...NetworkOpt) *Network {
@@ -60,8 +59,7 @@ func New(opt ...NetworkOpt) *Network {
 	nn := &Network{shapes: opts.shapes}
 
 	// input, hidden(s), output
-	// {2, 4, 1}
-	nn.Layers = make([]*Layer, len(nn.shapes)-1)
+	nn.layers = make([]*Layer, len(nn.shapes)-1)
 
 	for i := 1; i < len(nn.shapes); i++ {
 		layer := &Layer{
@@ -75,7 +73,7 @@ func New(opt ...NetworkOpt) *Network {
 			}
 		}
 
-		nn.Layers[i-1] = layer
+		nn.layers[i-1] = layer
 	}
 
 	nn.af = opts.activation
@@ -111,7 +109,7 @@ func (nn *Network) Train(epochs int, inputs, targets [][]float64, callback func(
 }
 
 func (nn *Network) String() string {
-	return fmt.Sprintf("Shapes: %v\nHidden Layers: %d\n", nn.shapes, len(nn.Layers)-1)
+	return fmt.Sprintf("Shapes: %v\nHidden Layers: %d\n", nn.shapes, len(nn.layers)-1)
 }
 
 func (nn *Network) TrainingDuration() time.Duration {
@@ -137,18 +135,19 @@ func (nn *Network) EpochStats(epoch int) stats.Epoch {
 
 func (nn *Network) Predict(input []float64) []float64 {
 	activation := input
-	for l := range len(nn.Layers) {
+	for l := range len(nn.layers) {
 		activation = nn.forward(activation, l)
 	}
 	return activation
 }
 
 func (nn *Network) Save(w io.Writer) error {
-	return gob.NewEncoder(w).Encode(nn)
+	layers := nn.layers
+	return gob.NewEncoder(w).Encode(layers)
 }
 
 func (nn *Network) forward(prevActivation []float64, atLayer int) []float64 {
-	layer := nn.Layers[atLayer]
+	layer := nn.layers[atLayer]
 	activation := make([]float64, len(layer.Nodes))
 	for i, node := range layer.Nodes {
 		sum := node.Bias
@@ -161,22 +160,22 @@ func (nn *Network) forward(prevActivation []float64, atLayer int) []float64 {
 }
 
 func (nn *Network) backward(input []float64, target []float64) {
-	activations := make([][]float64, len(nn.Layers))
+	activations := make([][]float64, len(nn.layers))
 	activation := input
-	for l := range len(nn.Layers) {
+	for l := range len(nn.layers) {
 		activation = nn.forward(activation, l)
 		activations[l] = activation
 	}
 
-	deltas := make([][]float64, len(nn.Layers))
+	deltas := make([][]float64, len(nn.layers))
 
 	// deltas
-	for l := len(nn.Layers) - 1; l >= 0; l-- {
-		currLayer := nn.Layers[l]
+	for l := len(nn.layers) - 1; l >= 0; l-- {
+		currLayer := nn.layers[l]
 		currActivation := activations[l]
 		var nextLayer *Layer
-		if l+1 < len(nn.Layers) {
-			nextLayer = nn.Layers[l+1]
+		if l+1 < len(nn.layers) {
+			nextLayer = nn.layers[l+1]
 		}
 		deltas[l] = make([]float64, len(currLayer.Nodes))
 
@@ -197,14 +196,14 @@ func (nn *Network) backward(input []float64, target []float64) {
 	}
 
 	// update
-	for l := len(nn.Layers) - 1; l >= 0; l-- {
+	for l := len(nn.layers) - 1; l >= 0; l-- {
 		var prevLayer *Layer
 		var prevActivation []float64
 		if l-1 >= 0 {
-			prevLayer = nn.Layers[l-1]
+			prevLayer = nn.layers[l-1]
 			prevActivation = activations[l-1]
 		}
-		currLayer := nn.Layers[l]
+		currLayer := nn.layers[l]
 
 		for i, delta := range deltas[l] {
 			currNode := currLayer.Nodes[i]
