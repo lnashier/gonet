@@ -79,6 +79,13 @@ func Build(ctx context.Context, args []string) {
 		}
 	}
 
+	// verify on training data
+	inputs, targets, err := readData(args[0], args[1])
+	if err != nil {
+		panic(err)
+	}
+	test(ctx, nn, inputs, targets)
+
 	unseenInputs, unseenTargets, err := readData(args[2], args[3])
 	if err != nil {
 		panic(err)
