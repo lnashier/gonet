@@ -81,3 +81,47 @@ fmt.Println(nn.Predict([]float64{0, 0, 0})) // [0.02768982884099321]
 fmt.Println(nn.Predict([]float64{1, 1, 0})) // [0.9965961389721709]
 fmt.Println(nn.Predict([]float64{1, 1, 1})) // [0.012035375150277857]
 ```
+
+### How to Save & Resume
+
+```go
+// A network can be saved to disk and loaded later to resume training or to predict.
+
+// You would call Save() on the Network and pass in an io.Writer
+if err := nn.Save(w); err != nil {
+    // do something with error
+}
+
+// or call help.Save which takes in a file name (it can be a path to a file)
+if err := help.Save("bin/my-model", nn); err != nil {
+    // do something with error
+}
+```
+
+```go
+// A network can be loaded from disk to resume training and/or to predict.
+
+// You would call feedforward.Load on the Network and pass in an io.Reader
+nn, err := feedforward.Load(
+    r, // io.Reader
+    feedforward.Activation(fns.Sigmoid), // set for your network
+    // REQUIRED if resuming network training
+    feedforward.ActivationDerivative(fns.SigmoidDerivative), // set for your network
+    feedforward.LearningRate(0.01), // set for your network
+)
+if err != nil {
+    // do something with error
+}
+
+// or call help.LoadFeedforward which takes in a file name (it can be a path to a file)
+nn, err := help.LoadFeedforward(
+    "bin/my-model",
+    feedforward.Activation(fns.Sigmoid), // set for your network
+    // REQUIRED if resuming network training
+    feedforward.ActivationDerivative(fns.SigmoidDerivative), // set for your network
+    feedforward.LearningRate(0.01), // set for your network
+)
+if err != nil {
+    // do something with error
+}
+```
