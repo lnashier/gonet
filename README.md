@@ -12,11 +12,12 @@
 ### How to Build & Train
 
 ```go
-// Start with defining shapes of your data and construct the network.
+// Start by defining shapes of your data and construct the network.
+
 nn := feedforward.New(
-    // We want to model 3 variables XOR function, that's the first shape
-    // We want 4 nodes in first hidden layer, that's the second shape
-    // There will be 1 output, that's the third shape.
+    // We want to model 3 variables XOR function, that's the first shape.
+    // We want 4 nodes in first hidden layer, that's the second shape.
+    // There will be 1 output (0 or 1), that's the third shape.
     feedforward.Shapes([]int{3, 4, 1}),
 
     // This is chosen based on prior knowledge of training data.
@@ -85,14 +86,14 @@ fmt.Println(nn.Predict([]float64{1, 1, 1})) // [0.012035375150277857]
 ### How to Save & Resume
 
 ```go
-// A network can be saved to disk and loaded later to resume training or to predict.
+// Saving a network to disk allows for later loading to resume training and/or prediction.
 
-// You would call Save() on the Network and pass in an io.Writer
+// To save the Network, you would invoke Save() on it and provide an io.Writer as an argument.
 if err := nn.Save(w); err != nil {
     // do something with error
 }
 
-// or call help.Save which takes in a file name (it can be a path to a file)
+// Alternatively, you can call help.Save, specifying a file name (which can include a file path).
 if err := help.Save("bin/my-model", nn); err != nil {
     // do something with error
 }
@@ -101,7 +102,7 @@ if err := help.Save("bin/my-model", nn); err != nil {
 ```go
 // A network can be loaded from disk to resume training and/or to predict.
 
-// You would call feedforward.Load on the Network and pass in an io.Reader
+// To load a previously saved network, you would call feedforward.Load and pass in an io.Reader. 
 nn, err := feedforward.Load(
     r, // io.Reader
     feedforward.Activation(fns.Sigmoid), // set for your network
@@ -113,7 +114,7 @@ if err != nil {
     // do something with error
 }
 
-// or call help.LoadFeedforward which takes in a file name (it can be a path to a file)
+// Alternatively, you can call help.LoadFeedforward, providing a file name (which can be a file path).
 nn, err := help.LoadFeedforward(
     "bin/my-model",
     feedforward.Activation(fns.Sigmoid), // set for your network
