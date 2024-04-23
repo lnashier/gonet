@@ -7,36 +7,21 @@ import (
 	"github.com/lnashier/gonet/feedforward"
 	"github.com/lnashier/gonet/fns"
 	"github.com/lnashier/gonet/help"
-	"os"
 )
 
-func loadModel(name string) *feedforward.Network {
-	model, err := os.Open(name)
-	if err != nil {
-		return nil
-	}
-	defer model.Close()
-
-	nn, err := feedforward.Load(
-		model,
+func getModel(name string) (*feedforward.Network, bool) {
+	nn, _ := help.LoadFeedforward(
+		name,
 		feedforward.Activation(fns.Sigmoid),
 		feedforward.ActivationDerivative(fns.SigmoidDerivative),
-		feedforward.LearningRate(1),
+		feedforward.LearningRate(0.1),
 	)
-	if err != nil {
-		panic(err)
-	}
-	return nn
-}
-
-func getModel(name string) (*feedforward.Network, bool) {
-	nn := loadModel(name)
 	if nn == nil {
 		return feedforward.New(
-			feedforward.Shapes([]int{28 * 28, 128, 128, 10}),
-			feedforward.LearningRate(1),
+			feedforward.Shapes([]int{28 * 28, 128, 10}),
 			feedforward.Activation(fns.Sigmoid),
 			feedforward.ActivationDerivative(fns.SigmoidDerivative),
+			feedforward.LearningRate(0.1),
 		), false
 	}
 	return nn, true
@@ -75,7 +60,7 @@ func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, targets []u
 }
 
 func Build(ctx context.Context, args []string) {
-	nn, loaded := getModel("bin/mnist.gob")
+	nn, loaded := getModel("bin/mnist")
 
 	fmt.Println("loaded", loaded)
 	fmt.Println(nn.String())
@@ -88,7 +73,7 @@ func Build(ctx context.Context, args []string) {
 		}
 		help.Train(ctx, nn, 10, inputs, targets)
 
-		err = help.Save("bin/mnist.gob", nn)
+		err = help.Save("bin/mnist", nn)
 		if err != nil {
 			panic(err)
 		}

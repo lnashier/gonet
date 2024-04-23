@@ -1,10 +1,12 @@
+# Feedforward Examples
+
+You may want to experiment with hyperparameters like the structure of hidden layers, epochs, and learning rate.
+
 ## Train Network to learn a XOR function
 
 ```shell
 go run . build xor
 ```
-
-You may want to experiment with hyperparameters like the structure of hidden layers, epochs, and learning rate.
 
 ```text
 %go run . build xor
@@ -187,4 +189,58 @@ Epoch 0009, Loss: 0.040516
 Epoch:(9) Inputs:(60000) Duration:(15.129230125s)
 TrainingDuration 3m59.579139625s
 Total Predictions: 10000, Correct Predictions: 9676, Accuracy: 96.76%
+```
+
+
+```text
+% go run . build mnist bin/data/mnist/train-images-idx3-ubyte.gz bin/data/mnist/train-labels-idx1-ubyte.gz bin/data/mnist/t10k-images-idx3-ubyte.gz bin/data/mnist/t10k-labels-idx1-ubyte.gz
+Shapes: [784 128 10]
+Hidden Layers: 1
+
+Epoch:(0) Inputs:(25859) Duration:(5.000984334s)
+Epoch:(0) Inputs:(51701) Duration:(10.001020875s)
+Epoch 0000, Loss: 0.112682
+Epoch:(0) Inputs:(60000) Duration:(11.606173334s)
+Epoch:(1) Inputs:(3804) Duration:(734.183208ms)
+Epoch:(1) Inputs:(29710) Duration:(5.734159833s)
+Epoch:(1) Inputs:(55621) Duration:(10.734186125s)
+Epoch 0001, Loss: 0.078596
+Epoch:(1) Inputs:(60000) Duration:(11.579851167s)
+Epoch:(2) Inputs:(7692) Duration:(1.4944955s)
+Epoch:(2) Inputs:(33380) Duration:(6.494490333s)
+Epoch:(2) Inputs:(59184) Duration:(11.494519375s)
+Epoch 0002, Loss: 0.063419
+Epoch:(2) Inputs:(60000) Duration:(11.654099791s)
+Epoch:(3) Inputs:(11322) Duration:(2.183396875s)
+Epoch:(3) Inputs:(37227) Duration:(7.183401875s)
+Epoch 0003, Loss: 0.053483
+Epoch:(3) Inputs:(60000) Duration:(11.578242s)
+Epoch:(4) Inputs:(15273) Duration:(2.948743375s)
+Epoch:(4) Inputs:(41146) Duration:(7.948716167s)
+Epoch 0004, Loss: 0.046826
+Epoch:(4) Inputs:(60000) Duration:(11.620672584s)
+Epoch:(5) Inputs:(18728) Duration:(3.666232291s)
+Epoch:(5) Inputs:(44184) Duration:(8.666230291s)
+Epoch 0005, Loss: 0.041967
+Epoch:(5) Inputs:(60000) Duration:(11.716188125s)
+Epoch:(6) Inputs:(22169) Duration:(4.299435083s)
+Epoch:(6) Inputs:(47965) Duration:(9.299437708s)
+Epoch 0006, Loss: 0.038013
+Epoch:(6) Inputs:(60000) Duration:(11.643503583s)
+Epoch:(7) Inputs:(25898) Duration:(4.998766792s)
+Epoch:(7) Inputs:(51664) Duration:(9.998798208s)
+Epoch 0007, Loss: 0.034757
+Epoch:(7) Inputs:(60000) Duration:(11.608739208s)
+Epoch:(8) Inputs:(3832) Duration:(739.74675ms)
+Epoch:(8) Inputs:(29726) Duration:(5.739744333s)
+Epoch:(8) Inputs:(55600) Duration:(10.739747042s)
+Epoch 0008, Loss: 0.032182
+Epoch:(8) Inputs:(60000) Duration:(11.588483083s)
+Epoch:(9) Inputs:(7619) Duration:(1.475462125s)
+Epoch:(9) Inputs:(33531) Duration:(6.475455542s)
+Epoch:(9) Inputs:(59436) Duration:(11.475477958s)
+Epoch 0009, Loss: 0.030089
+Epoch:(9) Inputs:(60000) Duration:(11.584600083s)
+TrainingDuration 3m12.771996916s
+Total Predictions: 10000, Correct Predictions: 9719, Accuracy: 97.19%
 ```

@@ -8,35 +8,20 @@ import (
 	"github.com/lnashier/gonet/help"
 	"math"
 	"math/rand"
-	"os"
 )
 
-func loadModel(name string) *feedforward.Network {
-	model, err := os.Open(name)
-	if err != nil {
-		return nil
-	}
-	defer model.Close()
-
-	nn, err := feedforward.Load(
-		model,
-		feedforward.Activation(fns.ReLU),
-		feedforward.ActivationDerivative(fns.ReLUDerivative),
+func getModel(name string) (*feedforward.Network, bool) {
+	nn, _ := help.LoadFeedforward(
+		name,
+		feedforward.Activation(fns.Tanh),
+		feedforward.ActivationDerivative(fns.TanhDerivative),
 		feedforward.LearningRate(0.1),
 	)
-	if err != nil {
-		panic(err)
-	}
-	return nn
-}
-
-func getModel(name string) (*feedforward.Network, bool) {
-	nn := loadModel(name)
 	if nn == nil {
 		return feedforward.New(
 			feedforward.Shapes([]int{1, 100, 1}),
-			feedforward.Activation(fns.ReLU),
-			feedforward.ActivationDerivative(fns.ReLUDerivative),
+			feedforward.Activation(fns.Tanh),
+			feedforward.ActivationDerivative(fns.TanhDerivative),
 			feedforward.LearningRate(0.1),
 		), false
 	}
@@ -58,7 +43,7 @@ func trainingData() ([][]float64, [][]float64) {
 // Build creates and trains Sine function
 // TODO requires more work
 func Build(ctx context.Context, args []string) {
-	nn, loaded := getModel("bin/sine.gob")
+	nn, loaded := getModel("bin/sine")
 
 	fmt.Println("loaded", loaded)
 	fmt.Println(nn.String())
@@ -67,7 +52,7 @@ func Build(ctx context.Context, args []string) {
 	if (len(args) > 0 && args[0] == "1") || !loaded {
 		inputs, targets := trainingData()
 		help.Train(ctx, nn, 10000, inputs, targets)
-		if err := help.Save("bin/sine.gob", nn); err != nil {
+		if err := help.Save("bin/sine", nn); err != nil {
 			panic(err)
 		}
 	}
