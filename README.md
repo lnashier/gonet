@@ -126,3 +126,9 @@ if err != nil {
     // do something with error
 }
 ```
+
+## Wish List
+
+- Define activation function for each network layer
+- Persist activation function with saved network
+- Draw network
