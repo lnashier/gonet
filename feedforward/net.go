@@ -85,23 +85,23 @@ func New(opt ...NetworkOpt) *Network {
 
 func (nn *Network) Train(epochs int, inputs, targets [][]float64, callback func(int) bool) {
 	nn.stats = &stats.Training{
-		Start:  time.Now(),
-		Epochs: make(map[int]*stats.Epoch),
+		Start: time.Now(),
 	}
 	defer func() {
 		nn.stats.End = time.Now()
 	}()
 
 	for epoch := range epochs {
-		nn.stats.Epochs[epoch] = &stats.Epoch{
+		epochStat := &stats.Epoch{
 			ID:    epoch,
 			Start: time.Now(),
 		}
+		nn.stats.Epochs.Store(epoch, epochStat)
 		for i, input := range inputs {
-			nn.stats.Epochs[epoch].Inputs++
+			epochStat.Inputs++
 			nn.backward(input, targets[i])
 		}
-		nn.stats.Epochs[epoch].End = time.Now()
+		epochStat.End = time.Now()
 		if !callback(epoch) {
 			break
 		}
@@ -126,9 +126,9 @@ func (nn *Network) EpochStats(epoch int) stats.Epoch {
 	if nn.stats == nil {
 		return stats.Epoch{}
 	}
-	epochStats, ok := nn.stats.Epochs[epoch]
+	epochStats, ok := nn.stats.Epochs.Load(epoch)
 	if ok {
-		return *epochStats
+		return *epochStats.(*stats.Epoch)
 	}
 	return stats.Epoch{}
 }
@@ -177,6 +177,7 @@ func (nn *Network) backward(input []float64, target []float64) {
 		if l+1 < len(nn.layers) {
 			nextLayer = nn.layers[l+1]
 		}
+
 		deltas[l] = make([]float64, len(currLayer.Nodes))
 
 		for i := range deltas[l] {
@@ -190,8 +191,7 @@ func (nn *Network) backward(input []float64, target []float64) {
 				// current is the output layer
 				err = target[i] - currActivation[i]
 			}
-			delta := err * nn.fd(currActivation[i])
-			deltas[l][i] = delta
+			deltas[l][i] = err * nn.fd(currActivation[i])
 		}
 	}
 
@@ -205,8 +205,8 @@ func (nn *Network) backward(input []float64, target []float64) {
 		}
 		currLayer := nn.layers[l]
 
-		for i, delta := range deltas[l] {
-			currNode := currLayer.Nodes[i]
+		for i, currNode := range currLayer.Nodes {
+			delta := deltas[l][i]
 			currNode.Bias = nn.lr * delta
 
 			if prevLayer != nil {

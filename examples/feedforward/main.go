@@ -7,6 +7,7 @@ import (
 	"feedforward/sine"
 	"feedforward/xor"
 	"feedforward/xor3"
+	"feedforward/xorclassification"
 	"fmt"
 	"github.com/lnashier/goarc"
 	goarccli "github.com/lnashier/goarc/cli"
@@ -24,6 +25,8 @@ func main() {
 					xor.Build(ctx, args[1:])
 				case "xor3":
 					xor3.Build(ctx)
+				case "xorclassification":
+					xorclassification.Build(ctx, args[1:])
 				case "sine":
 					sine.Build(ctx, args[1:])
 				case "mnist":

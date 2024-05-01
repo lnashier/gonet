@@ -45,7 +45,7 @@ func trainingData() ([][]float64, [][]float64) {
 func Build(ctx context.Context, args []string) {
 	nn, loaded := getModel("bin/sine")
 
-	fmt.Println("loaded", loaded)
+	fmt.Println("Loaded", loaded)
 	fmt.Println(nn.String())
 
 	// resuming training or not trained

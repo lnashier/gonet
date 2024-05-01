@@ -7,6 +7,7 @@ import (
 	"github.com/lnashier/gonet/feedforward"
 	"github.com/lnashier/gonet/fns"
 	"github.com/lnashier/gonet/help"
+	"time"
 )
 
 func getModel(name string) (*feedforward.Network, bool) {
@@ -60,31 +61,46 @@ func test(ctx context.Context, nn gonet.Network, inputs [][][]uint8, targets []u
 }
 
 func Build(ctx context.Context, args []string) {
-	nn, loaded := getModel("bin/mnist")
+	name := "bin/mnist"
 
-	fmt.Println("loaded", loaded)
+	nn, loaded := getModel(name)
+
+	fmt.Println("Loaded", loaded)
 	fmt.Println(nn.String())
+
+	if !loaded {
+		if err := help.Save(fmt.Sprintf("%s-random-%s", name, time.Now().Format("060402150405")), nn); err != nil {
+			panic(err)
+		}
+	}
 
 	// resuming training or not trained
 	if (len(args) > 4 && args[4] == "1") || !loaded {
-		inputs, targets, err := trainingData(10, args[0], args[1])
+		images, labels, err := readData(args[0], args[1])
 		if err != nil {
 			panic(err)
 		}
-		help.Train(ctx, nn, 10, inputs, targets)
 
-		err = help.Save("bin/mnist", nn)
+		fmt.Printf("Normalizing %d images and %d labels\n", len(images), len(labels))
+
+		inputs, targets, err := normalizeData(10, images, labels)
 		if err != nil {
 			panic(err)
 		}
-	}
 
-	// verify on training data
-	inputs, targets, err := readData(args[0], args[1])
-	if err != nil {
-		panic(err)
+		fmt.Println("Testing on training-data before (re)training")
+		test(ctx, nn, images, labels)
+
+		help.Train(ctx, nn, 10, inputs, targets, help.LossFunc(fns.LogLoss))
+
+		err = help.Save(name, nn)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Testing on training-data after (re)training")
+		test(ctx, nn, images, labels)
 	}
-	test(ctx, nn, inputs, targets)
 
 	unseenInputs, unseenTargets, err := readData(args[2], args[3])
 	if err != nil {

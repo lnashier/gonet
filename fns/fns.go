@@ -158,3 +158,35 @@ func SubtractMat(mat1, mat2 [][]float64) [][]float64 {
 	}
 	return result
 }
+
+func MeanSquaredError(predictions, targets [][]float64) float64 {
+	totalLoss := 0.0
+	for i, prediction := range predictions {
+		target := targets[i]
+		for j := range prediction {
+			loss := target[j] - prediction[j]
+			totalLoss += loss * loss
+		}
+	}
+	return totalLoss / float64(len(predictions))
+}
+
+func LogLoss(predictions, targets [][]float64) float64 {
+	totalLoss := 0.0
+	for i, prediction := range predictions {
+		target := targets[i]
+		for j := range prediction {
+			totalLoss += -((target[j] * math.Log(prediction[j])) + ((1 - target[j]) * math.Log(1-prediction[j])))
+		}
+	}
+	return totalLoss / float64(len(predictions))
+}
+
+func BinaryLogLoss(predictions, targets [][]float64) float64 {
+	totalLoss := 0.0
+	for i, prediction := range predictions {
+		target := targets[i]
+		totalLoss += -((target[0] * math.Log(prediction[0])) + ((1 - target[0]) * math.Log(1-prediction[0])))
+	}
+	return totalLoss / float64(len(predictions))
+}

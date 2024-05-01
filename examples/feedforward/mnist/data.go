@@ -24,21 +24,15 @@ func readData(imagesPath, labelsPath string) ([][][]uint8, []uint8, error) {
 	return images, labels, nil
 }
 
-func trainingData(outputSize int, imagesPath, labelsPath string) ([][]float64, [][]float64, error) {
-	images, labels, err := readData(imagesPath, labelsPath)
-	if err != nil {
-		return nil, nil, err
-	}
-
+func normalizeData(outputSize int, images [][][]uint8, labels []uint8) ([][]float64, [][]float64, error) {
 	var inputs [][]float64
 	var outputs [][]float64
-	for i, image := range images {
-		inputs = append(inputs, flattenImage(image))
+	for i, img := range images {
+		inputs = append(inputs, flattenImage(img))
 		output := make([]float64, outputSize)
 		output[labels[i]] = 1.0 // One-hot encode the label
 		outputs = append(outputs, output)
 	}
-
 	return inputs, outputs, nil
 }
 

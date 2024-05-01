@@ -1,11 +1,14 @@
 package stats
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Training struct {
 	Start  time.Time
 	End    time.Time
-	Epochs map[int]*Epoch
+	Epochs sync.Map
 }
 
 type Epoch struct {
